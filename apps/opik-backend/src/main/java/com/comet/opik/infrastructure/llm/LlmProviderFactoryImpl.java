@@ -11,6 +11,7 @@ import com.comet.opik.infrastructure.llm.gemini.GeminiModelName;
 import com.comet.opik.infrastructure.llm.openai.OpenaiModelName;
 import com.comet.opik.infrastructure.llm.openrouter.OpenRouterModelName;
 import com.comet.opik.infrastructure.llm.vertexai.VertexAIModelName;
+import com.comet.opik.infrastructure.llm.vllm.VllmModelName;
 import dev.langchain4j.model.chat.ChatModel;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
@@ -88,6 +89,10 @@ class LlmProviderFactoryImpl implements LlmProviderFactory {
 
         if (isModelBelongToProvider(model, VertexAIModelName.class, VertexAIModelName::qualifiedName)) {
             return LlmProvider.VERTEX_AI;
+        }
+
+        if (isModelBelongToProvider(model, VllmModelName.class, VllmModelName::qualifiedName)) {
+            return LlmProvider.VLLM;
         }
 
         throw new BadRequestException(ERROR_MODEL_NOT_SUPPORTED.formatted(model));
