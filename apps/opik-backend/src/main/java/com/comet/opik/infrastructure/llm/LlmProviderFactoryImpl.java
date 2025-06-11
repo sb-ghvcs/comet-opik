@@ -11,8 +11,9 @@ import com.comet.opik.infrastructure.llm.gemini.GeminiModelName;
 import com.comet.opik.infrastructure.llm.openai.OpenaiModelName;
 import com.comet.opik.infrastructure.llm.openrouter.OpenRouterModelName;
 import com.comet.opik.infrastructure.llm.vertexai.VertexAIModelName;
-import com.comet.opik.infrastructure.llm.vllm.VllmModelName;
+import com.comet.opik.infrastructure.llm.vllm.VllmModelNameChecker;
 import dev.langchain4j.model.chat.ChatModel;
+import jakarta.annotation.Nullable;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
 import lombok.NonNull;
@@ -37,7 +38,7 @@ class LlmProviderFactoryImpl implements LlmProviderFactory {
     }
 
     public LlmProviderService getService(@NonNull String workspaceId, @NonNull String model) {
-        var llmProvider = getLlmProvider(model);
+        var llmProvider = getLlmProvider(model, workspaceId);
         var providerConfig = getProviderApiKey(workspaceId, llmProvider);
 
         var config = buildConfig(providerConfig);
@@ -59,7 +60,7 @@ class LlmProviderFactoryImpl implements LlmProviderFactory {
 
     public ChatModel getLanguageModel(@NonNull String workspaceId,
             @NonNull LlmAsJudgeModelParameters modelParameters) {
-        var llmProvider = getLlmProvider(modelParameters.name());
+        var llmProvider = getLlmProvider(modelParameters.name(), workspaceId);
         var providerConfig = getProviderApiKey(workspaceId, llmProvider);
 
         var config = buildConfig(providerConfig);
@@ -73,7 +74,7 @@ class LlmProviderFactoryImpl implements LlmProviderFactory {
     /**
      * The agreed requirement is to resolve the LLM provider and its API key based on the model.
      */
-    private LlmProvider getLlmProvider(String model) {
+    private LlmProvider getLlmProvider(String model, @Nullable String workspaceId) {
         if (isModelBelongToProvider(model, OpenaiModelName.class, OpenaiModelName::toString)) {
             return LlmProvider.OPEN_AI;
         }
@@ -91,7 +92,7 @@ class LlmProviderFactoryImpl implements LlmProviderFactory {
             return LlmProvider.VERTEX_AI;
         }
 
-        if (isModelBelongToProvider(model, VllmModelName.class, VllmModelName::qualifiedName)) {
+        if (isModelBelongToVllm(model, workspaceId)) {
             return LlmProvider.VLLM;
         }
 
@@ -115,5 +116,9 @@ class LlmProviderFactoryImpl implements LlmProviderFactory {
         return EnumUtils.getEnumList(enumClass).stream()
                 .map(valueGetter)
                 .anyMatch(model::equals);
+    }
+
+    private boolean isModelBelongToVllm(String model, String workspaceId) {
+        return new VllmModelNameChecker(llmProviderApiKeyService).isVllmModel(model, workspaceId);
     }
 }

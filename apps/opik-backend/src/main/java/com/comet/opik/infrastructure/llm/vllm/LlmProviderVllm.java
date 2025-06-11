@@ -45,7 +45,7 @@ public class LlmProviderVllm implements LlmProviderService {
 
     @Override
     public Optional<ErrorMessage> getLlmProviderError(@NonNull Throwable throwable) {
-        return LlmProviderLangChainMapper.INSTANCE.getErrorObject(throwable, log);
+        return LlmProviderLangChainMapper.INSTANCE.getVllmErrorObject(throwable, log);
     }
 
 }

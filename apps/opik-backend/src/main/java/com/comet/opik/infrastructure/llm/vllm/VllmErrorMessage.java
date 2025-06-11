@@ -3,37 +3,100 @@ package com.comet.opik.infrastructure.llm.vllm;
 import com.comet.opik.infrastructure.llm.LlmProviderError;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.dropwizard.jersey.errors.ErrorMessage;
-import jakarta.validation.constraints.NotBlank;
 
 import static com.comet.opik.infrastructure.llm.vllm.VllmErrorMessage.VllmError;
 
-public record VllmErrorMessage(VllmError error) implements LlmProviderError<VllmError> {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record VllmErrorMessage(VllmError error, String object, String message, String type, String param,
+        Integer code) implements LlmProviderError<VllmError> {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record VllmError(@NotBlank String message, @NotBlank String code, @NotBlank String type) {
+    public record VllmError(String message, String code, String type) {
     }
 
     public ErrorMessage toErrorMessage() {
-        String message = error.message();
+        // Try to get message from different possible locations
+        String errorMessage = null;
 
-        if (message == null) {
-            return null;
+        if (error != null && error.message() != null) {
+            errorMessage = error.message();
+        } else if (message != null) {
+            errorMessage = message;
         }
 
-        Integer code = getCode(error);
-
-        if (code != null) {
-            return new ErrorMessage(code, message);
+        if (errorMessage == null || errorMessage.trim().isEmpty()) {
+            errorMessage = "Unknown vLLM error";
         }
 
-        return new ErrorMessage(500, error.message(), error.code);
+        // Try to get error code from different possible locations
+        Integer errorCode = getErrorCode();
+
+        if (errorCode != null) {
+            return new ErrorMessage(errorCode, errorMessage);
+        }
+
+        return new ErrorMessage(500, errorMessage, getErrorType());
     }
 
-    private Integer getCode(VllmError error) {
-        return switch (error.code) {
-            case "invalid_api_key" -> 401;
-            case "internal_error" -> 500;
-            default -> null;
-        };
+    @Override
+    public VllmError error() {
+        // Return the nested error if available, otherwise create one from top-level fields
+        if (error != null) {
+            return error;
+        }
+
+        // Create a synthetic VllmError from top-level fields if nested error is null
+        if (message != null || type != null || (code != null && code > 0)) {
+            return new VllmError(
+                    message != null ? message : "Unknown error",
+                    code != null ? String.valueOf(code) : "unknown",
+                    type != null ? type : "unknown");
+        }
+
+        return null;
+    }
+
+    private Integer getErrorCode() {
+        // First try the top-level code field
+        if (code != null && code > 0) {
+            return code;
+        }
+
+        // Then try error-specific code handling
+        if (error != null && error.code() != null) {
+            return switch (error.code()) {
+                case "invalid_api_key" -> 401;
+                case "internal_error" -> 500;
+                case "400" -> 400;
+                case "401" -> 401;
+                case "403" -> 403;
+                case "404" -> 404;
+                case "429" -> 429;
+                case "500" -> 500;
+                case "502" -> 502;
+                case "503" -> 503;
+                default -> {
+                    try {
+                        yield Integer.parseInt(error.code());
+                    } catch (NumberFormatException e) {
+                        yield null;
+                    }
+                }
+            };
+        }
+
+        // Try to parse based on error type
+        if (type != null && type.contains("BadRequest")) {
+            return 400;
+        }
+
+        return null;
+    }
+
+    private String getErrorType() {
+        if (error != null && error.type() != null) {
+            return error.type();
+        }
+        return type != null ? type : "VllmError";
     }
 }

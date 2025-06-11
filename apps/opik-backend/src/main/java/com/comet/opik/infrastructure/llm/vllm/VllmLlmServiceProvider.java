@@ -22,12 +22,12 @@ class VllmLlmServiceProvider implements LlmServiceProvider {
 
     @Override
     public LlmProviderService getService(@NonNull LlmProviderClientApiConfig apiKey) {
-        return new LlmProviderVllm(clientGenerator.newOpenAiClient(apiKey));
+        return new LlmProviderVllm(clientGenerator.newVllmClient(apiKey));
     }
 
     @Override
     public ChatModel getLanguageModel(@NonNull LlmProviderClientApiConfig config,
             AutomationRuleEvaluatorLlmAsJudge.LlmAsJudgeModelParameters modelParameters) {
-        return clientGenerator.newOpenAiChatLanguageModel(config, modelParameters);
+        return clientGenerator.newVllmChatLanguageModel(config, modelParameters);
     }
 }
