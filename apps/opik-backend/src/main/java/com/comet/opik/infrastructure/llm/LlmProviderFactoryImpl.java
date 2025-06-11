@@ -74,7 +74,7 @@ class LlmProviderFactoryImpl implements LlmProviderFactory {
     /**
      * The agreed requirement is to resolve the LLM provider and its API key based on the model.
      */
-    private LlmProvider getLlmProvider(String model, @Nullable String workspaceId) {
+    private LlmProvider getLlmProvider(String model, String workspaceId) {
         if (isModelBelongToProvider(model, OpenaiModelName.class, OpenaiModelName::toString)) {
             return LlmProvider.OPEN_AI;
         }

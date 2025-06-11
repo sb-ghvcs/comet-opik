@@ -37,10 +37,8 @@ public class VllmClientGenerator implements LlmProviderClientGenerator<OpenAiCli
         var openAiClientBuilder = OpenAiClient.builder()
                 .baseUrl(DEFAULT_OPENAI_URL)
                 .httpClientBuilder(jdkHttpClientBuilder)
-                .logRequests(true)
-                .logResponses(true);
-        // .logRequests(llmProviderClientConfig.getLogRequests())
-        // .logResponses(llmProviderClientConfig.getLogResponses());
+                .logRequests(llmProviderClientConfig.getLogRequests())
+                .logResponses(llmProviderClientConfig.getLogResponses());
 
         String finalBaseUrl = DEFAULT_OPENAI_URL;
         Optional.ofNullable(llmProviderClientConfig.getVllmClient())

@@ -15,7 +15,6 @@ public record VllmErrorMessage(VllmError error, String object, String message, S
     }
 
     public ErrorMessage toErrorMessage() {
-        // Try to get message from different possible locations
         String errorMessage = null;
 
         if (error != null && error.message() != null) {
@@ -28,7 +27,6 @@ public record VllmErrorMessage(VllmError error, String object, String message, S
             errorMessage = "Unknown vLLM error";
         }
 
-        // Try to get error code from different possible locations
         Integer errorCode = getErrorCode();
 
         if (errorCode != null) {
@@ -40,12 +38,10 @@ public record VllmErrorMessage(VllmError error, String object, String message, S
 
     @Override
     public VllmError error() {
-        // Return the nested error if available, otherwise create one from top-level fields
         if (error != null) {
             return error;
         }
 
-        // Create a synthetic VllmError from top-level fields if nested error is null
         if (message != null || type != null || (code != null && code > 0)) {
             return new VllmError(
                     message != null ? message : "Unknown error",
@@ -57,12 +53,10 @@ public record VllmErrorMessage(VllmError error, String object, String message, S
     }
 
     private Integer getErrorCode() {
-        // First try the top-level code field
         if (code != null && code > 0) {
             return code;
         }
 
-        // Then try error-specific code handling
         if (error != null && error.code() != null) {
             return switch (error.code()) {
                 case "invalid_api_key" -> 401;
@@ -85,7 +79,6 @@ public record VllmErrorMessage(VllmError error, String object, String message, S
             };
         }
 
-        // Try to parse based on error type
         if (type != null && type.contains("BadRequest")) {
             return 400;
         }
